@@ -1,4 +1,4 @@
-import { LocationDrawer } from "@/components/LocationDrawer";
+import { BranchingLocationDrawerExample } from "@/components/LocationDrawerExample";
 
 export default function Home() {
   return (
@@ -9,7 +9,7 @@ export default function Home() {
 
       <div className="absolute bottom-4 w-screen left-0">
         <div className="w-full px-8">
-          <LocationDrawer />
+          <BranchingLocationDrawerExample />
         </div>
       </div>
     </>

@@ -1,4 +1,5 @@
 import ContactDrawer from "@/components/contactDrawer";
+import HamburgerMenu from "@/components/hamburgerMenu";
 import { ShelterMap } from "@/components/map";
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
           <ContactDrawer />
         </div>
       </div>
+      <HamburgerMenu />
     </>
   );
 }

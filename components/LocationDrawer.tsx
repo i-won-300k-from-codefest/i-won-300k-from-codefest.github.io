@@ -15,9 +15,14 @@ import {
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 
-type LocationType = "店鋪" | "出入口" | "廁所" | "餐廳";
+type LocationType = "restaurant" | "entrance" | "restroom" | "shop";
 
-const LOCATION_OPTIONS: LocationType[] = ["店鋪", "出入口", "廁所", "餐廳"];
+const LOCATION_OPTIONS: Record<LocationType, string> = {
+  restaurant: "餐廳",
+  entrance: "入口",
+  restroom: "廁所",
+  shop: "店鋪",
+};
 
 export function LocationDrawer() {
   const [step, setStep] = useState(0);
@@ -82,7 +87,7 @@ export function LocationDrawer() {
           <DrawerDescription>
             {step === 0
               ? "請選擇您最靠近的位置"
-              : `您選擇了：${selectedLocation}`}
+              : `您選擇了：${selectedLocation ? LOCATION_OPTIONS[selectedLocation] : ""}`}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -99,15 +104,17 @@ export function LocationDrawer() {
                 transition={transition}
               >
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    {LOCATION_OPTIONS.map((location) => (
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(LOCATION_OPTIONS).map(([key, label]) => (
                       <Button
-                        key={location}
-                        className="w-full "
+                        key={key}
                         variant="outline"
-                        onClick={() => handleLocationSelect(location)}
+                        className="w-full h-24 text-lg"
+                        onClick={() =>
+                          handleLocationSelect(key as LocationType)
+                        }
                       >
-                        {location}
+                        {label}
                       </Button>
                     ))}
                   </div>
@@ -124,7 +131,6 @@ export function LocationDrawer() {
                 animate="center"
                 exit="exit"
                 transition={transition}
-                className="absolute inset-0 px-4"
               >
                 <div className="space-y-4">
                   <p className="text-muted-foreground mb-4">
@@ -141,13 +147,6 @@ export function LocationDrawer() {
                       選項 3
                     </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    className="w-full mt-4"
-                    onClick={handleBack}
-                  >
-                    ← 返回上一步
-                  </Button>
                 </div>
               </motion.div>
             )}
@@ -157,11 +156,40 @@ export function LocationDrawer() {
         <Separator />
 
         <DrawerFooter>
-          <DrawerClose asChild>
-            <Button variant="outline" className="w-full">
-              取消
-            </Button>
-          </DrawerClose>
+          <div className="flex w-full">
+            <AnimatePresence mode="wait">
+              {step > 0 && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0, marginRight: 0 }}
+                  animate={{ width: "50%", opacity: 1, marginRight: "0.5rem" }}
+                  exit={{ width: 0, opacity: 0, marginRight: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                  }}
+                >
+                  <Button className="w-full" onClick={handleBack}>
+                    ← 上一步
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.div
+              animate={{ width: step > 0 ? "50%" : "100%" }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+              }}
+            >
+              <DrawerClose asChild>
+                <Button variant="outline" className="w-full">
+                  取消
+                </Button>
+              </DrawerClose>
+            </motion.div>
+          </div>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

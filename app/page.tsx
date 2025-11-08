@@ -1,4 +1,4 @@
-import { BranchingLocationDrawerExample } from "@/components/LocationDrawerExample";
+import ContactDrawer from "@/components/contactDrawer";
 
 export default function Home() {
   return (
@@ -9,7 +9,7 @@ export default function Home() {
 
       <div className="absolute bottom-4 w-screen left-0">
         <div className="w-full px-8">
-          <BranchingLocationDrawerExample />
+          <ContactDrawer />
         </div>
       </div>
     </>

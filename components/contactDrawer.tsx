@@ -25,7 +25,7 @@ export default function ContactDrawer() {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <Button className="w-full h-fit">
+        <Button className="w-full h-fit cursor-pointer">
           <div className="flex gap-4 py-2 mx-auto h-fit place-items-center">
             <div className="flex -space-x-2">
               {displayedAvatars.map((contact) => (
@@ -39,9 +39,7 @@ export default function ContactDrawer() {
               ))}
             </div>
 
-            <p className="leading-7">
-              家庭共 <b>{contacts.length} 個聯絡人</b>
-            </p>
+            <p className="leading-7 font-bold">查看我的家庭</p>
           </div>
         </Button>
       </DrawerTrigger>
@@ -74,7 +72,7 @@ export default function ContactDrawer() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-destructive hover:text-destructive h-8 w-8"
+                  className="text-destructive hover:text-destructive h-8 w-8 cursor-pointer"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -86,7 +84,9 @@ export default function ContactDrawer() {
         <DrawerFooter>
           <AddMemberDrawer />
           <DrawerClose asChild>
-            <Button variant="outline">關閉</Button>
+            <Button variant="outline" className="cursor-pointer">
+              關閉
+            </Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

@@ -24,12 +24,29 @@ interface ShelterData {
   coordinates: [number, number];
 }
 
-export function ShelterSelectionDialog() {
+interface ShelterSelectionDialogProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showNoShelterMessage?: boolean;
+}
+
+export function ShelterSelectionDialog({
+  isOpen: externalIsOpen,
+  onOpenChange: externalOnOpenChange,
+  showNoShelterMessage = false,
+}: ShelterSelectionDialogProps = {}) {
   const { familyData, setCommonShelter } = useFamily();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [shelters, setShelters] = useState<ShelterData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen =
+    externalOnOpenChange !== undefined
+      ? externalOnOpenChange
+      : setInternalIsOpen;
 
   // Load shelter data only when dialog opens
   useEffect(() => {
@@ -137,6 +154,39 @@ export function ShelterSelectionDialog() {
             選擇一個避難所作為家庭緊急集合地點
           </DialogDescription>
         </DialogHeader>
+
+        {/* No Shelter Warning Message */}
+        {showNoShelterMessage && !familyData.commonShelter && (
+          <div className="px-4 sm:px-6 pb-2">
+            <div className="bg-secondary-50 dark:bg-secondary-900/20 border-2 border-secondary-500 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-secondary-500 flex items-center justify-center mt-0.5">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 mb-1">
+                    尚未設定家庭集合避難所
+                  </p>
+                  <p className="text-xs text-secondary-700 dark:text-secondary-300">
+                    請從下方列表選擇一個避難所作為家庭緊急集合地點
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="px-4 sm:px-6 pb-4 space-y-2 flex-shrink-0">

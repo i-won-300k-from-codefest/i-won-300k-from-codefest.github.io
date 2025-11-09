@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import ContactDrawer from "@/components/contactDrawer";
 import HamburgerMenu from "@/components/hamburgerMenu";
-import { ShelterMap } from "@/components/map";
+import { ShelterMap, type ShelterMapRef } from "@/components/map";
 import { NewsBanner } from "@/components/NewsBanner";
 import { NewsDialog } from "@/components/NewsDialog";
 import type { NewsItem } from "@/components/NewsDialog";
-import { FamilyProvider } from "@/contexts/FamilyContext";
+import { FamilyProvider, useFamily } from "@/contexts/FamilyContext";
+import { Button } from "@/components/ui/button";
+import { Navigation } from "lucide-react";
+import { ShelterSelectionDialog } from "@/components/ShelterSelectionDialog";
 
 // Mock news data - replace with actual data source
 const mockNews: NewsItem[] = [
@@ -31,13 +34,26 @@ const mockNews: NewsItem[] = [
   },
 ];
 
-export default function Home() {
+function HomeContent() {
   const [isNewsDialogOpen, setIsNewsDialogOpen] = useState(false);
+  const [isShelterDialogOpen, setIsShelterDialogOpen] = useState(false);
+  const mapRef = useRef<ShelterMapRef>(null);
+  const { familyData } = useFamily();
+
+  const handleNavigateToShelter = () => {
+    if (familyData.commonShelter) {
+      // If shelter is set, fly to it
+      mapRef.current?.flyToCommonShelter();
+    } else {
+      // If no shelter is set, open the selection dialog
+      setIsShelterDialogOpen(true);
+    }
+  };
 
   return (
-    <FamilyProvider>
+    <>
       <div className="w-full flex place-items-center justify-center h-full bg-grey-200">
-        <ShelterMap />
+        <ShelterMap ref={mapRef} />
       </div>
 
       {/* News Banner */}
@@ -53,12 +69,43 @@ export default function Home() {
         news={mockNews}
       />
 
+      {/* Shelter Selection Dialog - triggered from navigation button */}
+      <ShelterSelectionDialog
+        isOpen={isShelterDialogOpen}
+        onOpenChange={setIsShelterDialogOpen}
+        showNoShelterMessage={!familyData.commonShelter}
+      />
+
+      {/* Navigate to Common Shelter Button */}
+      <div className="absolute bottom-28 right-8 z-10">
+        <Button
+          size="icon"
+          onClick={handleNavigateToShelter}
+          className="h-12 w-12 rounded-full shadow-lg cursor-pointer"
+          title={
+            familyData.commonShelter
+              ? "前往集合避難所"
+              : "設定家庭集合避難所"
+          }
+        >
+          <Navigation className="h-5 w-5" />
+        </Button>
+      </div>
+
       <div className="absolute bottom-4 w-screen left-0">
         <div className="w-full px-8">
           <ContactDrawer />
         </div>
       </div>
       <HamburgerMenu />
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <FamilyProvider>
+      <HomeContent />
     </FamilyProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useFamily } from "@/contexts/FamilyContext";
@@ -27,12 +27,30 @@ const MAPBOX_TOKEN =
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
-export function ShelterMap() {
+export interface ShelterMapRef {
+  flyToCommonShelter: () => void;
+}
+
+export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
   const { familyData } = useFamily();
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    flyToCommonShelter: () => {
+      if (map.current && familyData.commonShelter?.coordinates) {
+        map.current.flyTo({
+          center: familyData.commonShelter.coordinates,
+          zoom: 16,
+          duration: 1500,
+          essential: true,
+        });
+      }
+    },
+  }));
 
   // Initial map setup - runs ONCE
   useEffect(() => {
@@ -150,7 +168,7 @@ export function ShelterMap() {
           },
         });
 
-        // Add common shelter point layer (will be shown/hidden via filter)
+        // Add common shelter point layer (highlighted when unclustered)
         map.current.addLayer({
           id: "common-shelter-point",
           type: "circle",
@@ -158,10 +176,10 @@ export function ShelterMap() {
           filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "地址"], "__COMMON_SHELTER__"]],
           paint: {
             "circle-color": "#f5ba4b", // secondary-500
-            "circle-radius": 12,
-            "circle-stroke-width": 3,
+            "circle-radius": 16,
+            "circle-stroke-width": 4,
             "circle-stroke-color": "#ffffff",
-            "circle-opacity": 0.95,
+            "circle-opacity": 1,
           },
         });
 
@@ -173,8 +191,8 @@ export function ShelterMap() {
           filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "地址"], "__COMMON_SHELTER__"]],
           paint: {
             "circle-color": "#f5ba4b",
-            "circle-radius": 20,
-            "circle-opacity": 0.3,
+            "circle-radius": 30,
+            "circle-opacity": 0.4,
           },
         });
 
@@ -535,7 +553,7 @@ export function ShelterMap() {
     };
   }, []);
 
-  // Update common shelter filter when it changes - NO RE-RENDER
+  // Update common shelter filter and fly to it when it changes
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
@@ -565,6 +583,16 @@ export function ShelterMap() {
         ["!", ["has", "point_count"]],
         ["==", ["get", "地址"], commonShelterAddress],
       ]);
+    }
+
+    // Fly to common shelter if it exists
+    if (familyData.commonShelter?.coordinates) {
+      map.current.flyTo({
+        center: familyData.commonShelter.coordinates,
+        zoom: 16,
+        duration: 1500,
+        essential: true,
+      });
     }
   }, [familyData.commonShelter, mapLoaded]);
 
@@ -833,4 +861,6 @@ export function ShelterMap() {
       `}</style>
     </div>
   );
-}
+});
+
+ShelterMap.displayName = "ShelterMap";

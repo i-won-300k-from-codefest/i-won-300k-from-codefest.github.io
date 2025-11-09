@@ -57,7 +57,7 @@ function HomeContent() {
             </div>
 
             {/* News Banner */}
-            <NewsBanner news={mockNews} onNewsClick={() => setIsNewsDialogOpen(true)} />
+            <NewsBanner news={mockNews} />
 
             {/* News Dialog */}
             <NewsDialog

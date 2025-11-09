@@ -7,10 +7,9 @@ import type { NewsItem } from './NewsDialog';
 
 interface NewsBannerProps {
     news: NewsItem[];
-    onNewsClick?: () => void;
 }
 
-export function NewsBanner({ news, onNewsClick }: NewsBannerProps) {
+export function NewsBanner({ news }: NewsBannerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible] = useState(true);
     const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
@@ -91,22 +90,7 @@ export function NewsBanner({ news, onNewsClick }: NewsBannerProps) {
                             x: { type: 'spring', stiffness: 300, damping: 30 },
                             opacity: { duration: 0.2 }
                         }}
-                        onClick={onNewsClick}
-                        role={onNewsClick ? 'button' : undefined}
-                        tabIndex={onNewsClick ? 0 : undefined}
-                        className={`flex items-center gap-3 p-3 ${
-                            onNewsClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg' : ''
-                        }`}
-                        onKeyDown={
-                            onNewsClick
-                                ? (event) => {
-                                      if (event.key === 'Enter' || event.key === ' ') {
-                                          event.preventDefault();
-                                          onNewsClick();
-                                      }
-                                  }
-                                : undefined
-                        }
+                        className={`flex items-center gap-3 p-3`}
                     >
                         {/* Priority Indicator */}
                         <div

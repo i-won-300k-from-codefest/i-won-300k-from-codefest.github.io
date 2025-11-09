@@ -2,18 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Newspaper, X, AlertCircle, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Newspaper, AlertCircle } from 'lucide-react';
 import type { NewsItem } from './NewsDialog';
 
 interface NewsBannerProps {
     news: NewsItem[];
-    onNewsClick?: () => void;
 }
 
-export function NewsBanner({ news, onNewsClick }: NewsBannerProps) {
+export function NewsBanner({ news }: NewsBannerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible] = useState(true);
     const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
 
     // Auto-rotate news items

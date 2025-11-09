@@ -23,6 +23,11 @@ interface ShelterFeature {
     };
 }
 
+interface ShelterCollection {
+    type: 'FeatureCollection';
+    features: ShelterFeature[];
+}
+
 // You'll need to add your Mapbox access token here
 // Get one from https://account.mapbox.com/access-tokens/
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.YOUR_MAPBOX_TOKEN_HERE';
@@ -39,6 +44,21 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [mapLoaded, setMapLoaded] = useState(false);
     const { familyData } = useFamily();
+    const [shelterData, setShelterData] = useState<ShelterCollection | null>(null);
+
+    const findShelterAtLocation = useRef(
+        (coords: [number, number], currentShelterData: ShelterCollection | null) => {
+            if (!currentShelterData) return null;
+            const [lng, lat] = coords;
+            return currentShelterData.features.find((feature: ShelterFeature) => {
+                const [shelterLng, shelterLat] = feature.geometry.coordinates;
+                const distance = Math.sqrt(
+                    Math.pow(shelterLng - lng, 2) + Math.pow(shelterLat - lat, 2)
+                );
+                return distance < 0.0001; // approximately 10 meters
+            });
+        }
+    );
 
     // Expose methods to parent component
     useImperativeHandle(ref, () => ({
@@ -318,7 +338,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
 
                     // Load avatar images for emergency contacts
                     const avatarPromises = members.map((contact) => {
-                        return new Promise<void>((resolve, reject) => {
+                        return new Promise<void>((resolve) => {
                             const img = new Image();
                             img.onload = () => {
                                 // Check if contact is at shelter
@@ -401,7 +421,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                             };
                             img.onerror = () => {
                                 console.error(`Error loading avatar ${contact.avatar}`);
-                                reject(new Error(`Failed to load ${contact.avatar}`));
+                                resolve(); // Resolve anyway to not block other avatars
                             };
                             img.src = contact.avatar;
                         });
@@ -594,57 +614,41 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
 
     // Re-render family members when they change
     useEffect(() => {
-        if (!map.current || !mapLoaded) return;
+        if (!map.current || !mapLoaded || !shelterData) return;
 
-        // This function is self-contained and can be called to refresh the contacts layer
-        const loadContactsLayer = async (members: typeof familyData.members) => {
-            if (!map.current) return;
-
-            // Inefficient but necessary for now: re-fetch shelter data to check member status.
-            // A better implementation would be to store shelter data in a ref or state.
-            const [newTaipeiResponse, taipeiResponse] = await Promise.all([
-                fetch('/json/新北市.json'),
-                fetch('/json/臺北市.json')
-            ]);
-            const newTaipeiData = await newTaipeiResponse.json();
-            const taipeiData = await taipeiResponse.json();
-            const shelterData = {
-                type: 'FeatureCollection' as const,
-                features: [...newTaipeiData.features, ...taipeiData.features]
-            };
-
-            const findShelterAtLocation = (coords: [number, number]) => {
-                const [lng, lat] = coords;
-                return shelterData.features.find((feature: ShelterFeature) => {
-                    const [shelterLng, shelterLat] = feature.geometry.coordinates;
-                    const distance = Math.sqrt(
-                        Math.pow(shelterLng - lng, 2) + Math.pow(shelterLat - lat, 2)
-                    );
-                    return distance < 0.0001; // approximately 10 meters
-                });
-            };
-
+        const loadContactsLayer = async (
+            currentMap: mapboxgl.Map,
+            members: typeof familyData.members,
+            currentShelterData: ShelterCollection | null,
+            currentFindShelterAtLocation: (
+                coords: [number, number],
+                shelterData: ShelterCollection | null
+            ) => ShelterFeature | undefined
+        ) => {
             // Remove existing contacts layer if it exists to prevent duplicates
-            if (map.current.getLayer('emergency-contacts')) {
-                map.current.removeLayer('emergency-contacts');
+            if (currentMap.getLayer('emergency-contacts')) {
+                currentMap.removeLayer('emergency-contacts');
             }
-            if (map.current.getSource('emergency-contacts')) {
-                map.current.removeSource('emergency-contacts');
+            if (currentMap.getSource('emergency-contacts')) {
+                currentMap.removeSource('emergency-contacts');
             }
 
             // Remove existing avatar images to prevent memory leaks with old avatars
             members.forEach((contact) => {
-                if (map.current?.hasImage(`avatar-${contact.id}`)) {
-                    map.current.removeImage(`avatar-${contact.id}`);
+                if (currentMap.hasImage(`avatar-${contact.id}`)) {
+                    currentMap.removeImage(`avatar-${contact.id}`);
                 }
             });
 
             // Load avatar images for all current emergency contacts
             const avatarPromises = members.map((contact) => {
-                return new Promise<void>((resolve, reject) => {
+                return new Promise<void>((resolve) => {
                     const img = new Image();
                     img.onload = () => {
-                        const shelter = findShelterAtLocation(contact.coordinates);
+                        const shelter = currentFindShelterAtLocation(
+                            contact.coordinates,
+                            currentShelterData
+                        );
                         const isAtShelter = !!shelter;
                         const size = 128;
                         const borderWidth = 6;
@@ -653,7 +657,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                         canvas.height = size;
                         const ctx = canvas.getContext('2d');
 
-                        if (ctx && map.current) {
+                        if (ctx && currentMap) {
                             ctx.clearRect(0, 0, size, size);
                             ctx.beginPath();
                             ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
@@ -675,8 +679,12 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                             canvas.toBlob((blob) => {
                                 if (blob) {
                                     createImageBitmap(blob).then((imageBitmap) => {
-                                        if (map.current) {
-                                            map.current.addImage(`avatar-${contact.id}`, imageBitmap, { sdf: false });
+                                        if (currentMap) {
+                                            currentMap.addImage(
+                                                `avatar-${contact.id}`,
+                                                imageBitmap,
+                                                { sdf: false }
+                                            );
                                         }
                                         resolve();
                                     });
@@ -701,7 +709,10 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
             const contactsGeoJSON = {
                 type: 'FeatureCollection' as const,
                 features: members.map((contact) => {
-                    const shelter = findShelterAtLocation(contact.coordinates);
+                    const shelter = currentFindShelterAtLocation(
+                        contact.coordinates,
+                        currentShelterData
+                    );
                     const isAtShelter = !!shelter;
                     return {
                         type: 'Feature' as const,
@@ -722,13 +733,13 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                 })
             };
 
-            if (map.current) {
-                map.current.addSource('emergency-contacts', {
+            if (currentMap) {
+                currentMap.addSource('emergency-contacts', {
                     type: 'geojson',
                     data: contactsGeoJSON
                 });
 
-                map.current.addLayer({
+                currentMap.addLayer({
                     id: 'emergency-contacts',
                     type: 'symbol',
                     source: 'emergency-contacts',
@@ -742,8 +753,8 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
             }
         };
 
-        loadContactsLayer(familyData.members);
-    }, [familyData.members, mapLoaded]);
+        loadContactsLayer(map.current, familyData.members, shelterData, findShelterAtLocation.current);
+    }, [familyData, familyData.members, mapLoaded, shelterData]);
 
     return (
         <div className="relative h-full w-full">

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import type { Geometry } from 'geojson';
 import { useFamily } from '@/contexts/FamilyContext';
 
 interface ShelterFeature {
@@ -37,6 +38,11 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 export interface ShelterMapRef {
     flyToCommonShelter: () => void;
 }
+
+const getPointCoordinates = (geometry: Geometry | undefined | null): [number, number] | null => {
+    if (!geometry || geometry.type !== 'Point') return null;
+    return geometry.coordinates as [number, number];
+};
 
 export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
     const mapContainer = useRef<HTMLDivElement>(null);
@@ -230,9 +236,11 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                     source.getClusterExpansionZoom(clusterId, (err, zoom) => {
                         if (err || !map.current || zoom === null || zoom === undefined) return;
 
+                        const centerCoordinates = getPointCoordinates(features[0].geometry);
+                        if (!centerCoordinates) return;
+
                         map.current.easeTo({
-                            center: (features[0].geometry as { coordinates: [number, number] })
-                                .coordinates,
+                            center: centerCoordinates,
                             zoom: zoom
                         });
                     });
@@ -242,9 +250,8 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                 const handleShelterClick = (e: mapboxgl.MapMouseEvent) => {
                     if (!map.current || !e.features || e.features.length === 0) return;
 
-                    const coordinates = (
-                        e.features[0].geometry as { coordinates: [number, number] }
-                    ).coordinates.slice();
+                    const coordinates = getPointCoordinates(e.features[0].geometry);
+                    if (!coordinates) return;
                     const properties = e.features[0].properties;
 
                     // Detect dark mode
@@ -477,9 +484,9 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                     map.current.on('click', 'emergency-contacts', (e) => {
                         if (!map.current || !e.features || e.features.length === 0) return;
 
-                        const coordinates = (
-                            e.features[0].geometry as { coordinates: [number, number] }
-                        ).coordinates.slice();
+                        const coordinates = getPointCoordinates(e.features[0].geometry);
+                        if (!coordinates) return;
+                        const [lng, lat] = coordinates;
                         const properties = e.features[0].properties;
 
                         // Detect dark mode
@@ -505,7 +512,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                             : `
                 <div class="contact-popup-row">
                   <span class="contact-popup-label">位置:</span>
-                  <span class="contact-popup-value">座標: ${coordinates[0].toFixed(5)}, ${coordinates[1].toFixed(5)}</span>
+                  <span class="contact-popup-value">座標: ${lng.toFixed(5)}, ${lat.toFixed(5)}</span>
                 </div>
               `;
 
@@ -623,7 +630,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
             currentFindShelterAtLocation: (
                 coords: [number, number],
                 shelterData: ShelterCollection | null
-            ) => ShelterFeature | undefined
+            ) => ShelterFeature | null | undefined
         ) => {
             // Remove existing contacts layer if it exists to prevent duplicates
             if (currentMap.getLayer('emergency-contacts')) {

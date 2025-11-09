@@ -50,7 +50,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [mapLoaded, setMapLoaded] = useState(false);
     const { familyData } = useFamily();
-    const [shelterData] = useState<ShelterCollection | null>(null);
+    const [shelterData, setShelterData] = useState<ShelterCollection | null>(null);
 
     const findShelterAtLocation = useRef(
         (coords: [number, number], currentShelterData: ShelterCollection | null) => {
@@ -106,15 +106,17 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                 const taipeiData = await taipeiResponse.json();
 
                 // Combine shelter data from both cities
-                const shelterData = {
+                const combinedShelterData = {
                     type: 'FeatureCollection' as const,
                     features: [...newTaipeiData.features, ...taipeiData.features]
                 };
 
+                setShelterData(combinedShelterData);
+
                 // Helper function to check if coordinates match a shelter (within ~10 meters)
                 const findShelterAtLocation = (coords: [number, number]) => {
                     const [lng, lat] = coords;
-                    return shelterData.features.find((feature: ShelterFeature) => {
+                    return combinedShelterData.features.find((feature: ShelterFeature) => {
                         const [shelterLng, shelterLat] = feature.geometry.coordinates;
                         const distance = Math.sqrt(
                             Math.pow(shelterLng - lng, 2) + Math.pow(shelterLat - lat, 2)
@@ -126,7 +128,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
                 // Add the shelter data as a source
                 map.current.addSource('shelters', {
                     type: 'geojson',
-                    data: shelterData,
+                    data: combinedShelterData,
                     cluster: true,
                     clusterMaxZoom: 14,
                     clusterRadius: 50

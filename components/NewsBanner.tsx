@@ -132,29 +132,7 @@ export function NewsBanner({ news, onNewsClick }: NewsBannerProps) {
                             </p>
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex flex-shrink-0 items-center gap-1">
-                            {onNewsClick && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    onClick={onNewsClick}
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                    <span className="sr-only">查看更多</span>
-                                </Button>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => setIsVisible(false)}
-                            >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">關閉</span>
-                            </Button>
-                        </div>
+
                     </motion.div>
                 </AnimatePresence>
             </div>

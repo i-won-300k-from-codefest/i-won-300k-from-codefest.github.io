@@ -25,6 +25,7 @@ import {
 import { useFamily } from "@/contexts/FamilyContext";
 import { ShelterSelectionDialog } from "./ShelterSelectionDialog";
 import { Separator } from "@/components/ui/separator";
+import { AnimatePresence, motion } from "motion/react";
 
 export default function ContactDrawer() {
   const { familyData, removeMember } = useFamily();
@@ -74,46 +75,60 @@ export default function ContactDrawer() {
         </div>
 
         <div className="flex flex-col gap-2 px-4 max-h-96 overflow-y-auto">
-          {contacts.map((contact) => (
-            <Card key={contact.id}>
-              <CardContent className="flex items-center justify-between px-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ml-2">
-                    <AvatarImage src={contact.avatar} alt={contact.name} />
-                    <AvatarFallback>{contact.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-0.5">
-                    <h3 className="font-semibold text-sm leading-none">
-                      {contact.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {contact.relation} · {contact.phone}
-                    </p>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                      onClick={() => removeMember(contact.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
-                      刪除
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardContent>
-            </Card>
-          ))}
+          <AnimatePresence mode="popLayout">
+            {contacts.map((contact) => (
+              <motion.div
+                key={contact.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: 100 }}
+                transition={{
+                  duration: 0.3,
+                  ease: "easeInOut",
+                }}
+              >
+                <Card>
+                  <CardContent className="flex items-center justify-between px-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 ml-2">
+                        <AvatarImage src={contact.avatar} alt={contact.name} />
+                        <AvatarFallback>{contact.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col gap-0.5">
+                        <h3 className="font-semibold text-sm leading-none">
+                          {contact.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {contact.relation} · {contact.phone}
+                        </p>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 cursor-pointer"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onClick={() => removeMember(contact.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                          刪除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
 
         <DrawerFooter>

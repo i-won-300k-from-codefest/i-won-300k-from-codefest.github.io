@@ -44,6 +44,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
+            <head>
+                <title>避難通</title>
+            </head>
             <body className={cn('h-screen antialiased', pingFangFont.className)}>{children}</body>
         </html>
     );

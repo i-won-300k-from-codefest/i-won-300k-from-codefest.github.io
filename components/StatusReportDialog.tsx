@@ -5,6 +5,7 @@ import { AlertCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -48,12 +49,14 @@ export function StatusReportDialog({
     isOpen,
     onOpenChange,
     emergencyContacts,
-    currentUser
+    currentUser,
+    className
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     emergencyContacts: EmergencyContact[];
     currentUser: UserData | null;
+    className?: string;
 }) {
     const [messages, setMessages] = useState<ChatMessage[]>(() => [
         {
@@ -133,8 +136,11 @@ export function StatusReportDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="h-12 w-full">
-                    <AlertCircle className="mr-2 h-5 w-5" />
+                <Button
+                    variant="outline"
+                    className={cn('h-12 w-full justify-start', className)}
+                >
+                    <AlertCircle className="mr-3 h-5 w-5" />
                     <span className="text-base">狀態回報</span>
                 </Button>
             </DialogTrigger>

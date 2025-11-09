@@ -148,6 +148,7 @@ export default function ContactDrawer() {
                         onOpenChange={setIsStatusReportOpen}
                         emergencyContacts={familyData.members}
                         currentUser={userData}
+                        className="justify-center"
                     />
                 </DrawerFooter>
             </DrawerContent>

@@ -50,7 +50,7 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [mapLoaded, setMapLoaded] = useState(false);
     const { familyData } = useFamily();
-    const [shelterData, setShelterData] = useState<ShelterCollection | null>(null);
+    const [shelterData] = useState<ShelterCollection | null>(null);
 
     const findShelterAtLocation = useRef(
         (coords: [number, number], currentShelterData: ShelterCollection | null) => {
@@ -760,7 +760,12 @@ export const ShelterMap = forwardRef<ShelterMapRef>((props, ref) => {
             }
         };
 
-        loadContactsLayer(map.current, familyData.members, shelterData, findShelterAtLocation.current);
+        loadContactsLayer(
+            map.current,
+            familyData.members,
+            shelterData,
+            findShelterAtLocation.current
+        );
     }, [familyData, familyData.members, mapLoaded, shelterData]);
 
     return (

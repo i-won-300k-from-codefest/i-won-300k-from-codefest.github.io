@@ -49,10 +49,7 @@ export default function ContactDrawer() {
                     <div className="mx-auto flex h-fit place-items-center gap-4 py-2">
                         <div className="flex -space-x-2">
                             {displayedAvatars.map((contact) => (
-                                <Avatar
-                                    key={contact.id}
-                                    className="ring-2 ring-background grayscale"
-                                >
+                                <Avatar key={contact.id} className="ring-2 ring-background">
                                     <AvatarImage src={contact.avatar} alt={contact.name} />
                                     <AvatarFallback>{contact.name.slice(0, 2)}</AvatarFallback>
                                 </Avatar>

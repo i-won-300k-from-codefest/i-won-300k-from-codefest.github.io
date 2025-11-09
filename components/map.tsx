@@ -3,15 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-
-interface EmergencyContact {
-  id: number;
-  name: string;
-  avatar: string;
-  phone: string;
-  relation: string;
-  coordinates: [number, number];
-}
+import { useFamily } from "@/contexts/FamilyContext";
 
 interface ShelterFeature {
   type: string;
@@ -39,9 +31,7 @@ export function ShelterMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [emergencyContacts, setEmergencyContacts] = useState<
-    EmergencyContact[]
-  >([]);
+  const { familyData, setCommonShelter } = useFamily();
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -69,14 +59,9 @@ export function ShelterMap() {
 
         // Combine shelter data from both cities
         const shelterData = {
-          type: "FeatureCollection",
+          type: "FeatureCollection" as const,
           features: [...newTaipeiData.features, ...taipeiData.features],
         };
-
-        // Load emergency contacts
-        const contactsResponse = await fetch("/emergency-contacts.json");
-        const contactsData = await contactsResponse.json();
-        setEmergencyContacts(contactsData.contacts);
 
         // Helper function to check if coordinates match a shelter (within ~10 meters)
         const findShelterAtLocation = (coords: [number, number]) => {
@@ -145,11 +130,20 @@ export function ShelterMap() {
         });
 
         // Add unclustered point layer (individual shelters) with primary color
+        // Hide shelters that are the common shelter (they'll be shown in a separate layer)
         map.current.addLayer({
           id: "unclustered-point",
           type: "circle",
           source: "shelters",
-          filter: ["!", ["has", "point_count"]],
+          filter: [
+            "all",
+            ["!", ["has", "point_count"]],
+            [
+              "!=",
+              ["get", "地址"],
+              familyData.commonShelter?.address || "",
+            ],
+          ],
           paint: {
             "circle-color": "#5ab4c5", // primary-500
             "circle-radius": 8,
@@ -159,9 +153,101 @@ export function ShelterMap() {
           },
         });
 
+        // Add common shelter layer with special highlighting (star icon)
+        if (familyData.commonShelter) {
+          // Create a star icon using canvas
+          const createStarIcon = () => {
+            const size = 64;
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+
+            if (ctx) {
+              // Draw outer glow circle
+              const gradient = ctx.createRadialGradient(
+                size / 2,
+                size / 2,
+                size / 4,
+                size / 2,
+                size / 2,
+                size / 2,
+              );
+              gradient.addColorStop(0, "rgba(245, 186, 75, 0.4)"); // secondary with opacity
+              gradient.addColorStop(1, "rgba(245, 186, 75, 0)");
+              ctx.fillStyle = gradient;
+              ctx.beginPath();
+              ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Draw star
+              const spikes = 5;
+              const outerRadius = size / 3;
+              const innerRadius = size / 6;
+              const centerX = size / 2;
+              const centerY = size / 2;
+
+              ctx.beginPath();
+              for (let i = 0; i < spikes * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                if (i === 0) {
+                  ctx.moveTo(x, y);
+                } else {
+                  ctx.lineTo(x, y);
+                }
+              }
+              ctx.closePath();
+              ctx.fillStyle = "#f5ba4b"; // secondary-500 (yellow)
+              ctx.fill();
+              ctx.strokeStyle = "#ffffff";
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+
+            return canvas;
+          };
+
+          const starCanvas = createStarIcon();
+          starCanvas.toBlob((blob) => {
+            if (blob && map.current) {
+              createImageBitmap(blob).then((imageBitmap) => {
+                if (map.current) {
+                  map.current.addImage("common-shelter-star", imageBitmap, {
+                    sdf: false,
+                  });
+
+                  // Add common shelter point layer with star icon
+                  map.current.addLayer({
+                    id: "common-shelter-point",
+                    type: "symbol",
+                    source: "shelters",
+                    filter: [
+                      "all",
+                      ["!", ["has", "point_count"]],
+                      [
+                        "==",
+                        ["get", "地址"],
+                        familyData.commonShelter?.address || "",
+                      ],
+                    ],
+                    layout: {
+                      "icon-image": "common-shelter-star",
+                      "icon-size": 1,
+                      "icon-allow-overlap": true,
+                      "icon-anchor": "center",
+                    },
+                  });
+                }
+              });
+            }
+          });
+        }
+
         // Load avatar images for emergency contacts
-        const avatarPromises = contactsData.contacts.map(
-          (contact: EmergencyContact) => {
+        const avatarPromises = familyData.members.map((contact) => {
             return new Promise<void>((resolve, reject) => {
               const img = new Image();
               img.onload = () => {
@@ -262,8 +348,8 @@ export function ShelterMap() {
 
         // Add emergency contacts as a source
         const contactsGeoJSON = {
-          type: "FeatureCollection",
-          features: contactsData.contacts.map((contact: EmergencyContact) => {
+          type: "FeatureCollection" as const,
+          features: familyData.members.map((contact) => {
             const shelter = findShelterAtLocation(contact.coordinates);
             const isAtShelter = !!shelter;
 
@@ -316,7 +402,8 @@ export function ShelterMap() {
           ) as mapboxgl.GeoJSONSource;
 
           source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err || !map.current) return;
+            if (err || !map.current || zoom === null || zoom === undefined)
+              return;
 
             map.current.easeTo({
               center: (features[0].geometry as any).coordinates,
@@ -326,7 +413,7 @@ export function ShelterMap() {
         });
 
         // Add click event for individual shelters
-        map.current.on("click", "unclustered-point", (e) => {
+        const handleShelterClick = (e: mapboxgl.MapMouseEvent) => {
           if (!map.current || !e.features || e.features.length === 0) return;
 
           const coordinates = (
@@ -337,7 +424,7 @@ export function ShelterMap() {
           // Detect dark mode
           const isDark = document.documentElement.classList.contains("dark");
 
-          // Create popup content with inline Tailwind color values
+          // Create popup content with inline Tailwind color values and button to set as common shelter
           const popupContent = `
             <div class="shelter-popup">
               <h3 class="shelter-popup-title">${properties?.類別 || "N/A"}</h3>
@@ -369,17 +456,59 @@ export function ShelterMap() {
                     : ""
                 }
               </div>
+              <button
+                class="common-shelter-button"
+                data-shelter-address="${properties?.地址 || ""}"
+                data-shelter-lng="${coordinates[0]}"
+                data-shelter-lat="${coordinates[1]}"
+                data-shelter-name="${properties?.類別 || ""}"
+              >
+                設為家庭集合避難所
+              </button>
             </div>
           `;
 
-          new mapboxgl.Popup({
+          const popup = new mapboxgl.Popup({
             maxWidth: "320px",
             className: `shelter-popup-container ${isDark ? "dark" : ""}`,
           })
             .setLngLat(coordinates)
             .setHTML(popupContent)
             .addTo(map.current);
-        });
+
+          // Add event listener to the button after popup is added
+          setTimeout(() => {
+            const button = document.querySelector(".common-shelter-button");
+            if (button) {
+              button.addEventListener("click", () => {
+                const address = button.getAttribute("data-shelter-address");
+                const lng = parseFloat(
+                  button.getAttribute("data-shelter-lng") || "0",
+                );
+                const lat = parseFloat(
+                  button.getAttribute("data-shelter-lat") || "0",
+                );
+                const name = button.getAttribute("data-shelter-name");
+
+                if (address && lng && lat) {
+                  setCommonShelter({
+                    address,
+                    coordinates: [lng, lat],
+                    name: name || undefined,
+                  });
+                  popup.remove();
+                }
+              });
+            }
+          }, 0);
+        };
+
+        map.current.on("click", "unclustered-point", handleShelterClick);
+
+        // Add click handler for common shelter too
+        if (familyData.commonShelter) {
+          map.current.on("click", "common-shelter-point", handleShelterClick);
+        }
 
         // Change cursor on hover
         map.current.on("mouseenter", "clusters", () => {
@@ -394,6 +523,16 @@ export function ShelterMap() {
         map.current.on("mouseleave", "unclustered-point", () => {
           if (map.current) map.current.getCanvas().style.cursor = "";
         });
+
+        // Add hover effects for common shelter
+        if (familyData.commonShelter) {
+          map.current.on("mouseenter", "common-shelter-point", () => {
+            if (map.current) map.current.getCanvas().style.cursor = "pointer";
+          });
+          map.current.on("mouseleave", "common-shelter-point", () => {
+            if (map.current) map.current.getCanvas().style.cursor = "";
+          });
+        }
 
         // Add click event for emergency contacts
         map.current.on("click", "emergency-contacts", (e) => {
@@ -482,7 +621,7 @@ export function ShelterMap() {
         map.current = null;
       }
     };
-  }, []);
+  }, [familyData.members, familyData.commonShelter, setCommonShelter]);
 
   return (
     <div className="relative w-full h-full">
@@ -731,6 +870,40 @@ export function ShelterMap() {
 
         .contact-popup-container.dark .contact-popup-value {
           color: #ffffff;
+        }
+
+        /* Common Shelter Button Styles */
+        .common-shelter-button {
+          width: 100%;
+          margin-top: 12px;
+          padding: 10px 16px;
+          background-color: #f5ba4b;
+          color: #171b1d;
+          font-weight: 600;
+          font-size: 13px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .common-shelter-button:hover {
+          background-color: #f7c968;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .common-shelter-button:active {
+          transform: translateY(0);
+        }
+
+        .shelter-popup-container.dark .common-shelter-button {
+          background-color: #f5ba4b;
+          color: #171b1d;
+        }
+
+        .shelter-popup-container.dark .common-shelter-button:hover {
+          background-color: #f7c968;
         }
       `}</style>
     </div>

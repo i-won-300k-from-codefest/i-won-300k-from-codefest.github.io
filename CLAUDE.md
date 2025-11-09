@@ -9,7 +9,7 @@ TaipeiPass Frontend is a Next.js 16 emergency shelter tracking application for T
 ## Development Commands
 
 ### Running the Application
-- `bun run dev` - Start development server (default: http://localhost:3000)
+- `bun run dev` - Start development server (default: http://localhost:3000). Never run `next dev` directly.
 - `bun run build` - Build production bundle
 - `bun start` - Start production server
 - `bun run lint` - Run ESLint

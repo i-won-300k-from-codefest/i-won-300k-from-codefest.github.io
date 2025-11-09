@@ -14,19 +14,32 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { useFamily } from "@/contexts/FamilyContext";
 
 export default function AddMemberDrawer() {
+  const { addMember } = useFamily();
   const [isOpen, setIsOpen] = useState(false);
   const [newMember, setNewMember] = useState({
     name: "",
     relation: "",
     phone: "",
     avatar: "",
+    coordinates: [121.4685, 25.0458] as [number, number], // Default coordinates (New Taipei City center)
   });
 
   const handleSubmit = () => {
-    // TODO: Add logic to save the new member
-    console.log("新增成員:", newMember);
+    if (!newMember.name || !newMember.phone || !newMember.relation) {
+      alert("請填寫必要欄位：姓名、關係、電話");
+      return;
+    }
+
+    addMember({
+      name: newMember.name,
+      relation: newMember.relation,
+      phone: newMember.phone,
+      avatar: newMember.avatar || "/avatar/user.png",
+      coordinates: newMember.coordinates,
+    });
 
     // Close drawer and reset form
     setIsOpen(false);
@@ -35,6 +48,7 @@ export default function AddMemberDrawer() {
       relation: "",
       phone: "",
       avatar: "",
+      coordinates: [121.4685, 25.0458],
     });
   };
 

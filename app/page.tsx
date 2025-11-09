@@ -7,6 +7,7 @@ import { ShelterMap } from "@/components/map";
 import { NewsBanner } from "@/components/NewsBanner";
 import { NewsDialog } from "@/components/NewsDialog";
 import type { NewsItem } from "@/components/NewsDialog";
+import { FamilyProvider } from "@/contexts/FamilyContext";
 
 // Mock news data - replace with actual data source
 const mockNews: NewsItem[] = [
@@ -34,7 +35,7 @@ export default function Home() {
   const [isNewsDialogOpen, setIsNewsDialogOpen] = useState(false);
 
   return (
-    <>
+    <FamilyProvider>
       <div className="w-full flex place-items-center justify-center h-full bg-grey-200">
         <ShelterMap />
       </div>
@@ -58,6 +59,6 @@ export default function Home() {
         </div>
       </div>
       <HamburgerMenu />
-    </>
+    </FamilyProvider>
   );
 }

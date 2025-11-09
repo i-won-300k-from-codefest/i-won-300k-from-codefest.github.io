@@ -14,7 +14,6 @@ import {
 import { Button } from "./ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, MoreVertical } from "lucide-react";
-import emergencyContactsData from "@/public/emergency-contacts.json";
 import { useState } from "react";
 import AddMemberDrawer from "./addMemberDrawer";
 import {
@@ -23,9 +22,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useFamily } from "@/contexts/FamilyContext";
 
 export default function ContactDrawer() {
-  const contacts = emergencyContactsData.contacts;
+  const { familyData, removeMember } = useFamily();
+  const contacts = familyData.members;
   const displayedAvatars = contacts.slice(0, 4);
 
   return (
@@ -86,7 +87,10 @@ export default function ContactDrawer() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                      onClick={() => removeMember(contact.id)}
+                    >
                       <Trash2 className="h-4 w-4 mr-2 text-destructive" />
                       刪除
                     </DropdownMenuItem>

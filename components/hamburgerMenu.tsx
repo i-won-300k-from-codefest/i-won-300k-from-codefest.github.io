@@ -19,16 +19,16 @@ import {
   type EmergencyContact,
 } from "@/components/StatusReportDialog";
 import { NewsDialog, type NewsItem } from "@/components/NewsDialog";
+import { useFamily } from "@/contexts/FamilyContext";
 
 function UserDrawer({
   userData,
-  emergencyContacts,
   news,
 }: {
   userData: UserData | null;
-  emergencyContacts: EmergencyContact[];
   news: NewsItem[];
 }) {
+  const { familyData } = useFamily();
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isNewsDialogOpen, setIsNewsDialogOpen] = useState(false);
@@ -80,7 +80,7 @@ function UserDrawer({
           <StatusReportDialog
             isOpen={isReportDialogOpen}
             onOpenChange={setIsReportDialogOpen}
-            emergencyContacts={emergencyContacts}
+            emergencyContacts={familyData.members}
             currentUser={userData}
           />
 
@@ -103,9 +103,6 @@ function UserDrawer({
 
 export default function HamburgerMenu() {
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [emergencyContacts, setEmergencyContacts] = useState<
-    EmergencyContact[]
-  >([]);
   const [news, setNews] = useState<NewsItem[]>([]);
 
   useEffect(() => {
@@ -114,22 +111,11 @@ export default function HamburgerMenu() {
       .then((data) => setUserData(data))
       .catch((err) => console.error("Failed to load user data:", err));
 
-    fetch("/emergency-contacts.json")
-      .then((res) => res.json())
-      .then((data) => setEmergencyContacts(data.contacts || []))
-      .catch((err) => console.error("Failed to load emergency contacts:", err));
-
     fetch("/news.json")
       .then((res) => res.json())
       .then((data) => setNews(data.news || []))
       .catch((err) => console.error("Failed to load news:", err));
   }, []);
 
-  return (
-    <UserDrawer
-      userData={userData}
-      emergencyContacts={emergencyContacts}
-      news={news}
-    />
-  );
+  return <UserDrawer userData={userData} news={news} />;
 }

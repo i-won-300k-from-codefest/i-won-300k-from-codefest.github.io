@@ -14,7 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, MoreVertical } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddMemberDrawer from "./addMemberDrawer";
 import {
   DropdownMenu,
@@ -26,11 +26,21 @@ import { useFamily } from "@/contexts/FamilyContext";
 import { ShelterSelectionDialog } from "./ShelterSelectionDialog";
 import { Separator } from "@/components/ui/separator";
 import { AnimatePresence, motion } from "motion/react";
+import { StatusReportDialog } from "./StatusReportDialog";
+import type { UserData } from "./UserStatusDialog";
 
 export default function ContactDrawer() {
   const { familyData, removeMember } = useFamily();
   const contacts = familyData.members;
   const displayedAvatars = contacts.slice(0, 4);
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    fetch("/current-user.json")
+      .then((res) => res.json())
+      .then((data) => setUserData(data))
+      .catch((err) => console.error("Failed to load user data:", err));
+  }, []);
 
   return (
     <Drawer>
@@ -133,11 +143,12 @@ export default function ContactDrawer() {
 
         <DrawerFooter>
           <AddMemberDrawer />
-          <DrawerClose asChild>
-            <Button variant="outline" className="cursor-pointer">
-              關閉
-            </Button>
-          </DrawerClose>
+          <StatusReportDialog
+            isOpen={false}
+            onOpenChange={() => {}}
+            emergencyContacts={familyData.members}
+            currentUser={userData}
+          />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

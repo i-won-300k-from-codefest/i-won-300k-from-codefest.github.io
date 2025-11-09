@@ -26,10 +26,22 @@ export default function AddMemberDrawer() {
     avatar: "",
     coordinates: [121.4685, 25.0458] as [number, number], // Default coordinates (New Taipei City center)
   });
+  const [errors, setErrors] = useState({
+    name: false,
+    relation: false,
+    phone: false,
+  });
 
   const handleSubmit = () => {
-    if (!newMember.name || !newMember.phone || !newMember.relation) {
-      alert("請填寫必要欄位：姓名、關係、電話");
+    const newErrors = {
+      name: !newMember.name,
+      relation: !newMember.relation,
+      phone: !newMember.phone,
+    };
+
+    setErrors(newErrors);
+
+    if (newErrors.name || newErrors.relation || newErrors.phone) {
       return;
     }
 
@@ -49,6 +61,11 @@ export default function AddMemberDrawer() {
       phone: "",
       avatar: "",
       coordinates: [121.4685, 25.0458],
+    });
+    setErrors({
+      name: false,
+      relation: false,
+      phone: false,
     });
   };
 
@@ -70,10 +87,15 @@ export default function AddMemberDrawer() {
               id="name"
               placeholder="請輸入姓名"
               value={newMember.name}
-              onChange={(e) =>
-                setNewMember({ ...newMember, name: e.target.value })
-              }
+              onChange={(e) => {
+                setNewMember({ ...newMember, name: e.target.value });
+                setErrors({ ...errors, name: false });
+              }}
+              className={errors.name ? "border-destructive" : ""}
             />
+            {errors.name && (
+              <p className="text-sm text-destructive">請輸入姓名</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -82,10 +104,15 @@ export default function AddMemberDrawer() {
               id="relation"
               placeholder="例如：父親、母親、子女"
               value={newMember.relation}
-              onChange={(e) =>
-                setNewMember({ ...newMember, relation: e.target.value })
-              }
+              onChange={(e) => {
+                setNewMember({ ...newMember, relation: e.target.value });
+                setErrors({ ...errors, relation: false });
+              }}
+              className={errors.relation ? "border-destructive" : ""}
             />
+            {errors.relation && (
+              <p className="text-sm text-destructive">請輸入關係</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -94,10 +121,15 @@ export default function AddMemberDrawer() {
               id="phone"
               placeholder="請輸入電話號碼"
               value={newMember.phone}
-              onChange={(e) =>
-                setNewMember({ ...newMember, phone: e.target.value })
-              }
+              onChange={(e) => {
+                setNewMember({ ...newMember, phone: e.target.value });
+                setErrors({ ...errors, phone: false });
+              }}
+              className={errors.phone ? "border-destructive" : ""}
             />
+            {errors.phone && (
+              <p className="text-sm text-destructive">請輸入電話號碼</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">

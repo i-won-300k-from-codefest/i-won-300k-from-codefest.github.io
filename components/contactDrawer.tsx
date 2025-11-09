@@ -23,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFamily } from "@/contexts/FamilyContext";
+import { ShelterSelectionDialog } from "./ShelterSelectionDialog";
+import { Separator } from "@/components/ui/separator";
 
 export default function ContactDrawer() {
   const { familyData, removeMember } = useFamily();
@@ -52,11 +54,24 @@ export default function ContactDrawer() {
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>家庭成員</DrawerTitle>
+          <DrawerTitle>家庭管理</DrawerTitle>
           <DrawerDescription>
-            目前家庭有 {contacts.length} 個人
+            管理家庭成員與集合避難所
           </DrawerDescription>
         </DrawerHeader>
+
+        {/* Common Shelter Selection */}
+        <div className="px-4 mb-4">
+          <ShelterSelectionDialog />
+        </div>
+
+        <Separator className="mb-4" />
+
+        <div className="px-4 mb-2">
+          <h3 className="font-semibold text-sm text-muted-foreground">
+            家庭成員 ({contacts.length})
+          </h3>
+        </div>
 
         <div className="flex flex-col gap-2 px-4 max-h-96 overflow-y-auto">
           {contacts.map((contact) => (
